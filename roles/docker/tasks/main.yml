@@ -1,25 +1,42 @@
 ---
-- name: Install Docker
-  tasks:
-    - name: Add Docker GPG key
-      apt_key:
-        url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
-        state: present
+- name: Add Docker GPG key
+  apt_key:
+    url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
+    state: present
 
-    - name: Add Docker repository
-      apt_repository:
-        repo: "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
-        state: present
+- name: Add Docker repository
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+    state: present
 
-    - name: Update apt cache
-      apt:
-        update_cache: yes
+- name: Update apt cache
+  apt:
+    update_cache: yes
 
-    - name: Install specific versions of Docker packages
-      apt:
-        name:
-          - docker-ce=5:24.0.9-1~{{ ansible_distribution | lower }}.{{ ansible_distribution_release }}
-          - docker-ce-cli=5:24.0.9-1~{{ ansible_distribution | lower }}.{{ ansible_distribution_release }}
-          - containerd.io
-          - docker-compose-plugin
-        state: present
+- name: Install specific versions of Docker packages
+  apt:
+    name:
+      - docker-ce=5:27.2.1-1~{{ ansible_distribution | lower }}.{{ ansible_distribution_number }}~{{ ansible_distribution_release }}
+      - docker-ce-cli=5:27.2.1-1~{{ ansible_distribution | lower }}.{{ ansible_distribution_number }}~{{ ansible_distribution_release }}
+      - containerd.io
+      - docker-compose-plugin
+    state: present
+
+- name: Ensure docker group exists
+  group:
+    name: docker
+    state: present
+
+- name: Start and enable Docker service
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Verify Docker installation
+  command: docker --version
+  register: docker_version_output
+
+- name: Print Docker version
+  debug:
+    var: docker_version_output.stdout

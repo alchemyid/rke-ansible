@@ -1,75 +1,81 @@
+
 ---
 - hosts: all
   name: default installation
-  become: yes
+  become: true
+  become_method: "{{ 'su' if ansible_distribution == 'debian' else 'sudo' }}"
+  become_user: root
+  become_flags: "{{ '-' if ansible_distribution == 'debian' else '-s' }}"
+  vars: 
+    upgrade_done: false
+
   pre_tasks:
-    - name: Set become method based on distribution
+    - name: Update and upgrade apt packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+      register: upgrade_result  # Capture the output of the upgrade task
+      tags: 
+        - upgrade_apt
+      when: not upgrade_done
+
+    - name: Show update and upgrade result
+      debug:
+        var: upgrade_result
+
+    - name: Set upgrade_done to true
       set_fact:
-        ansible_become_method: "{{ 'su' if ansible_distribution == 'debian' else 'sudo' }}"
+        upgrade_done: true
+      when: upgrade_result.changed  # Update only if the apt upgrade task made changes
 
-  roles:
-    - role: kernel_config
-    - role: docker
-      # when: install_docker | default(false)
-    - role: ntp-client
+    - name: Install required packages
+      apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+          - socat
+        state: present
+        update_cache: yes
+      register: install_result
+      tags:
+        - install_packages
 
-  tasks:
+    - name: Show installation progress
+      debug:
+        var: install_result
+
     - name: Disable AppArmor
       service:
         name: apparmor
         state: stopped
         enabled: 'no'
-    - name: Configure DNS server using netplan (Ubuntu)
-      when: ansible_distribution == 'ubuntu'
-      block:
-        - name: Create netplan configuration directory
-          file:
-            path: /etc/netplan
-            state: directory
-            mode: '0755'
-        - name: Configure netplan with DNS servers
-          copy:
-            content: |
-              network:
-                version: 2
-                ethernets:
-                  eth0:
-                    nameservers:
-                      addresses: {{ dns_servers | to_json }}
-            dest: /etc/netplan/01-netcfg.yaml
-            owner: root
-            group: root
-            mode: '0644'
-        - name: Apply netplan configuration
-          command: netplan apply
-    - name: Configure DNS server using systemd-resolved (Debian)
-      when: ansible_distribution == 'debian'
-      block:
-        - name: Configure systemd-resolved with DNS servers
-          copy:
-            content: |
-              [Resolve]
-              DNS={{ dns_servers | join(' ') }}
-              FallbackDNS=8.8.4.4
-            dest: /etc/systemd/resolved.conf
-            owner: root
-            group: root
-            mode: '0644'
-        - name: Restart systemd-resolved
-          service:
-            name: systemd-resolved
-            state: restarted
-            enabled: 'yes'
+      register: apparmor_result
+      tags:
+        - disable_apparmor
+
+    - name: Show AppArmor status
+      debug:
+        var: "AppArmor service stopped: {{ apparmor_result.changed }}"
+
     - name: Set timezone
       command: timedatectl set-timezone {{ timezone }}
-
-- hosts: datastore
-  name: install datastore
-  become: yes
-  pre_tasks:
-    - name: Set become method based on distribution
-      set_fact:
-        ansible_become_method: "{{ 'su' if ansible_distribution == 'debian' else 'sudo' }}"
+      tags:
+        - set_timezone
 
   roles:
-    - role: datastore
+    - role: kernel_config
+      tags: 
+        - kernel_config
+    - role: docker
+      tags:
+        - docker
+      # when: install_docker | default(false)
+    - role: ntp-client
+      tags:
+        - ntp-client
+    # - role: docker-uninstall
+    #   tags:
+    #     - docker-uninstall
+
+

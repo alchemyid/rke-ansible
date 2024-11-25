@@ -1,0 +1,58 @@
+---
+- name: Stop Docker service
+  service:
+    name: docker
+    state: stopped
+  ignore_errors: true  # Ignore if Docker is not running
+
+- name: Remove Docker package
+  apt:
+    name: docker-ce
+    state: absent
+
+- name: Remove Docker CLI
+  apt:
+    name: docker-ce-cli
+    state: absent
+
+- name: Remove Docker containerd
+  apt:
+    name: containerd.io
+    state: absent
+
+- name: Remove any remaining Docker packages
+  apt:
+    name: 
+      - docker-ce
+      - docker-ce-cli # This will match any package starting with docker
+      - containerd.io
+      - docker-compose-plugin
+    state: absent
+  ignore_errors: true  # Ignore if these packages are not installed
+
+- name: Remove Docker configuration files
+  file:
+    path: /var/lib/docker
+    state: absent
+
+- name: Remove Docker systemd service
+  file:
+    path: /etc/systemd/system/docker.service
+    state: absent
+  ignore_errors: true  # Ignore if the service file does not exist
+
+- name: Remove Docker settings directory
+  file:
+    path: /etc/docker
+    state: absent
+  ignore_errors: true  # Ignore if the directory does not exist
+
+- name: Remove Docker group
+  group:
+    name: docker
+    state: absent
+  ignore_errors: true  # Ignore if the group does not exist
+
+- name: Clean up unused dependencies
+  apt:
+    autoremove: yes

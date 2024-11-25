@@ -4,8 +4,6 @@
     name: ntp
     state: present
     update_cache: yes
-  become: yes
-  become_method: "{{ ansible_become_method }}"
 
 - name: Set NTP servers based on distribution
   set_fact:
@@ -18,14 +16,10 @@
     owner: root
     group: root
     mode: '0644'
-  become: yes
-  become_method: "{{ ansible_become_method }}"
 
 - name: Ensure NTP service is running and enabled
   service:
     name: ntp
     state: started
     enabled: yes
-  become: yes
-  become_method: "{{ ansible_become_method }}"--
 # tasks file for roles/ntp-client

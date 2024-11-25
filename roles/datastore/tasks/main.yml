@@ -1,83 +1,79 @@
 ---
-- name: Setup NFS and Minio datastores and copy multiple files
-  hosts: all
-  become: yes
-  tasks:
-    - name: Ensure Docker is installed
-      apt:
-        name: docker.io
-        state: present
-        update_cache: yes
+- name: Ensure Docker is installed
+  apt:
+    name: docker.io
+    state: present
+    update_cache: yes
 
-    - name: Create directory for NFS shared data
-      file:
-        path: "{{ nfs_shared_directory }}"
-        state: directory
-        owner: "{{ remote_file_owner }}"
-        group: "{{ remote_file_owner }}"
-        mode: '0777'
+- name: Create directory for NFS shared data
+  file:
+    path: "{{ nfs_shared_directory }}"
+    state: directory
+    owner: "{{ remote_file_owner }}"
+    group: "{{ remote_file_owner }}"
+    mode: '0777'
 
-    - name: Create directory for Minio data
-      file:
-        path: "{{ minio_data_directory }}"
-        state: directory
-        owner: "{{ remote_file_owner }}"
-        group: "{{ remote_file_owner }}"
-        mode: '0777'
+- name: Create directory for Minio data
+  file:
+    path: "{{ minio_data_directory }}"
+    state: directory
+    owner: "{{ remote_file_owner }}"
+    group: "{{ remote_file_owner }}"
+    mode: '0777'
 
-    - name: Create directory for Minio certs
-      file:
-        path: "{{ minio_certs_directory }}"
-        state: directory
-        owner: "{{ remote_file_owner }}"
-        group: "{{ remote_file_owner }}"
-        mode: '0777'
+- name: Create directory for Minio certs
+  file:
+    path: "{{ minio_certs_directory }}"
+    state: directory
+    owner: "{{ remote_file_owner }}"
+    group: "{{ remote_file_owner }}"
+    mode: '0777'
 
-    - name: Start NFS container
-      community.docker.docker_container:
-        name: nfs
-        image: itsthenetwork/nfs-server-alpine:12
-        network_mode: bridge
-        restart_policy: unless-stopped
-        privileged: true
-        env:
-          SHARED_DIRECTORY: /data
-        volumes:
-          - "{{ nfs_shared_directory }}:/data"
-        ports:
-          - "2049:2049"
+- name: Start NFS container
+  community.docker.docker_container:
+    name: nfs
+    image: itsthenetwork/nfs-server-alpine:12
+    network_mode: bridge
+    restart_policy: unless-stopped
+    privileged: true
+    env:
+      SHARED_DIRECTORY: /data
+    volumes:
+      - "{{ nfs_shared_directory }}:/data"
+    ports:
+      - "2049:2049"
 
-    - name: Start Minio container
-      community.docker.docker_container:
-        name: minio-server
-        image: minio/minio:RELEASE.2021-03-26T00-00-41Z-35-g5cce9361b
-        network_mode: bridge
-        restart_policy: always
-        env:
-          MINIO_SERVER_HOST: "{{ minio_server_host }}"
-          MINIO_ACCESS_KEY: "{{ minio_access_key }}"
-          MINIO_SECRET_KEY: "{{ minio_secret_key }}"
-        volumes:
-          - "{{ minio_data_directory }}:/data"
-          - "{{ minio_certs_directory }}:/certs"
-        ports:
-          - "9000:9000"
-        command: ["server", "/data", "--certs-dir", "/certs"]
+- name: Start Minio container
+  community.docker.docker_container:
+    name: minio-server
+    image: minio/minio:RELEASE.2021-03-26T00-00-41Z-35-g5cce9361b
+    network_mode: bridge
+    restart_policy: always
+    env:
+      MINIO_SERVER_HOST: "{{ minio_server_host }}"
+      MINIO_ACCESS_KEY: "{{ minio_access_key }}"
+      MINIO_SECRET_KEY: "{{ minio_secret_key }}"
+    volumes:
+      - "{{ minio_data_directory }}:/data"
+      - "{{ minio_certs_directory }}:/certs"
+    ports:
+      - "9000:9000"
+    command: ["server", "/data", "--certs-dir", "/certs"]
 
-    - name: Copy ssl key to the remote server
-      copy:
-        src: "{{ item.src }}"
-        dest: "{{ item.dest }}"
-        owner: "{{ remote_file_owner }}"
-        group: "{{ remote_file_group }}"
-        mode: "{{ remote_file_mode }}"
-      with_items: "{{ files_to_copy }}"
+- name: Copy ssl key to the remote server
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ remote_file_owner }}"
+    group: "{{ remote_file_group }}"
+    mode: "{{ remote_file_mode }}"
+  with_items: "{{ files_to_copy }}"
 
-    - name: Copy ssl cert to the remote server
-      copy:
-        src: "{{ item.src }}"
-        dest: "{{ item.dest }}"
-        owner: "{{ remote_file_owner }}"
-        group: "{{ remote_file_group }}"
-        mode: "{{ remote_file_mode }}"
-      with_items: "{{ files_to_copy }}"
+- name: Copy ssl cert to the remote server
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ remote_file_owner }}"
+    group: "{{ remote_file_group }}"
+    mode: "{{ remote_file_mode }}"
+  with_items: "{{ files_to_copy }}"
