@@ -5,27 +5,27 @@ all:
     ansible_distribution: "debian"
     ansible_distribution_release: "bookworm"
 	# ansible_user: "devops"
-	ansible_password: "password_non_sudo"
-	ansible_become_pass: "password_for_root"
+    ansible_password: "password_non_sudo"
+    ansible_become_pass: "password_for_root"
     ansible_ssh_private_key_file: "~/.ssh/id_rsa"
+    dns_servers:
+      - "8.8.8.8"
+      - "8.8.4.4"
+    timezone: "Asia/Jakarta"
 
 host_vars:
-  master-01:
-    ansible_become_pass: "password_for_server"
-    ansible_distribution: "debian"
-    ansible_distribution_release: "bookworm"
   datastore:
-	nfs_shared_directory: "/data/nfs"
-	minio_server_host: "s3-storage-dev.wad.co.id"
-	minio_access_key: "Heiy3ooQu3"
-	minio_secret_key: "shes8vuos7oahohLeir6vuof9FeeShocooCoh2yu2Eedae0boi"
-	minio_data_directory: "/data/minio/data"
-	minio_certs_directory: "/data/minio/ssl"
-	files_to_copy:
-	  - src: datastore/files/wad.co.id.crt 
-		dest: /data/minio/ssl/public.crt 
-	  - src: datastore/files/wad.co.id.key
-		dest: /data/minio/ssl/private.key
-	remote_file_owner: root
-	remote_file_group: root
-	remote_file_mode: '0777'
+    nfs_shared_directory: "/data/nfs"
+    minio_server_host: "s3-storage-dev.wad.co.id"
+    minio_access_key: "Heiy3ooQu3"
+    minio_secret_key: "shes8vuos7oahohLeir6vuof9FeeShocooCoh2yu2Eedae0boi"
+    minio_data_directory: "/data/minio/data"
+    minio_certs_directory: "/data/minio/ssl"
+    files_to_copy:
+      - src: datastore/files/wad.co.id.crt 
+        dest: /data/minio/ssl/public.crt 
+      - src: datastore/files/wad.co.id.key
+        dest: /data/minio/ssl/private.key
+    remote_file_owner: root
+    remote_file_group: root
+    remote_file_mode: '0777'

@@ -1,7 +1,7 @@
 ---
 - hosts: all
+  name: default installation
   become: yes
-
   pre_tasks:
     - name: Set become method based on distribution
       set_fact:
@@ -10,5 +10,66 @@
   roles:
     - role: kernel_config
     - role: docker
-      when: install_docker | default(false)
-    - role: ntp
+      # when: install_docker | default(false)
+    - role: ntp-client
+
+  tasks:
+    - name: Disable AppArmor
+      service:
+        name: apparmor
+        state: stopped
+        enabled: 'no'
+    - name: Configure DNS server using netplan (Ubuntu)
+      when: ansible_distribution == 'ubuntu'
+      block:
+        - name: Create netplan configuration directory
+          file:
+            path: /etc/netplan
+            state: directory
+            mode: '0755'
+        - name: Configure netplan with DNS servers
+          copy:
+            content: |
+              network:
+                version: 2
+                ethernets:
+                  eth0:
+                    nameservers:
+                      addresses: {{ dns_servers | to_json }}
+            dest: /etc/netplan/01-netcfg.yaml
+            owner: root
+            group: root
+            mode: '0644'
+        - name: Apply netplan configuration
+          command: netplan apply
+    - name: Configure DNS server using systemd-resolved (Debian)
+      when: ansible_distribution == 'debian'
+      block:
+        - name: Configure systemd-resolved with DNS servers
+          copy:
+            content: |
+              [Resolve]
+              DNS={{ dns_servers | join(' ') }}
+              FallbackDNS=8.8.4.4
+            dest: /etc/systemd/resolved.conf
+            owner: root
+            group: root
+            mode: '0644'
+        - name: Restart systemd-resolved
+          service:
+            name: systemd-resolved
+            state: restarted
+            enabled: 'yes'
+    - name: Set timezone
+      command: timedatectl set-timezone {{ timezone }}
+
+- hosts: datastore
+  name: install datastore
+  become: yes
+  pre_tasks:
+    - name: Set become method based on distribution
+      set_fact:
+        ansible_become_method: "{{ 'su' if ansible_distribution == 'debian' else 'sudo' }}"
+
+  roles:
+    - role: datastore

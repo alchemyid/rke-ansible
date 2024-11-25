@@ -1,6 +1,5 @@
 ---
 - name: Load RKE kernel modules
-  become: yes
   vars:
     kernel_modules:
       - br_netfilter
