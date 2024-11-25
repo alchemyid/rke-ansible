@@ -8,5 +8,5 @@ ansible-vault decrypt hosts/k8s-dev.wad.co.id.vars
 
 ** Run the playbook with the `--ask-vault-pass` option to decrypt the inventory file:**
 ```sh
-ansible-playbook site.yml -i hosts/k8s-dev.wad.co.id.hosts --ask-vault-pass -e "@hosts/k8s-dev.wad.co.id.vars" -e install_docker=true
+ansible-playbook playbook.yml -i hosts/k8s-dev.wad.co.id.hosts.yml --ask-vault-pass -e "@hosts/k8s-dev.wad.co.id.vars.yml" -e install_docker=true
 ```
