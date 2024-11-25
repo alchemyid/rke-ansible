@@ -1,10 +1,9 @@
 ---
-ansible_become_pass: "XXXXXX"
+ansible_become_pass: "Primasys2012"
 ansible_distribution: "debian"
 ansible_distribution_number: "12"
 ansible_distribution_release: "bookworm"
-ansible_user: "devops"
-# ansible_password: "password_if_not_using_keypair"
+ansible_user: "takadev"
 ansible_ssh_private_key_file: "~/.ssh/id_rsa.girirahayu"
 dns_servers:
   - "8.8.8.8"
