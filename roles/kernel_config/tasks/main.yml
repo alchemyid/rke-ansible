@@ -1,0 +1,65 @@
+---
+- name: Load RKE kernel modules
+  become: yes
+  vars:
+    kernel_modules:
+      - br_netfilter
+      - ip6_udp_tunnel
+      - ip_set
+      - ip_set_hash_ip
+      - ip_set_hash_net
+      - iptable_filter
+      - iptable_mangle
+      - iptable_raw
+      - nf_defrag_ipv4
+      - nfnetlink
+      - udp_tunnel
+      - veth
+      - vxlan
+      - x_tables
+      - xt_addrtype
+      - xt_comment
+      - xt_mark
+      - xt_multiport
+      - xt_recent
+      - xt_set
+      - xt_statistic
+      - xt_tcpudp
+
+  tasks:
+    - name: Load kernel modules for RKE
+      modprobe:
+        name: "{{ item }}"
+        state: present
+      with_items: "{{ kernel_modules }}"
+
+    - name: Ensure kernel modules are loaded on boot
+      lineinfile:
+        path: /etc/modules-load.d/rke.conf
+        line: "{{ item }}"
+        create: yes
+      with_items: "{{ kernel_modules }}"
+
+    - name: Disable swap and load kernel modules
+      become: yes
+      tasks:
+        - name: Disable SWAP since kubernetes can't work with swap enabled (1/2)
+          shell: swapoff -a
+
+        - name: Disable SWAP in fstab since kubernetes can't work with swap enabled (2/2)
+          replace:
+            path: /etc/fstab
+            regexp: '^([^#].*?\sswap\s+.*)$'
+            replace: '# \1'
+
+        - name: Modify sysctl entries
+          sysctl:
+            name: '{{ item.key }}'
+            value: '{{ item.value }}'
+            sysctl_set: yes
+            state: present
+            reload: yes
+          with_items:
+            - {key: net.bridge.bridge-nf-call-ip6tables, value: 1}
+            - {key: net.bridge.bridge-nf-call-iptables,  value: 1}
+            - {key: net.ipv4.ip_forward,  value: 1}

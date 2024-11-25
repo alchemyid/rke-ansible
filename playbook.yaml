@@ -1,0 +1,14 @@
+---
+- hosts: all
+  become: yes
+
+  pre_tasks:
+    - name: Set become method based on distribution
+      set_fact:
+        ansible_become_method: "{{ 'su' if ansible_distribution == 'debian' else 'sudo' }}"
+
+  roles:
+    - role: kernel_config
+    - role: docker
+      when: install_docker | default(false)
+    - role: ntp

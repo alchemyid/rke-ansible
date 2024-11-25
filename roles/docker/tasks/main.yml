@@ -1,0 +1,26 @@
+---
+- name: Install Docker
+  become: yes
+  tasks:
+    - name: Add Docker GPG key
+      apt_key:
+        url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install specific versions of Docker packages
+      apt:
+        name:
+          - docker-ce=5:24.0.9-1~{{ ansible_distribution | lower }}.{{ ansible_distribution_release }}
+          - docker-ce-cli=5:24.0.9-1~{{ ansible_distribution | lower }}.{{ ansible_distribution_release }}
+          - containerd.io
+          - docker-compose-plugin
+        state: present
